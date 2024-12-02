@@ -139,4 +139,22 @@ extension View {
     public func cardInsets(_ insets: EdgeInsets) -> some View {
         self.environment(\.pksCardInsets, insets)
     }
+
+    /// Sets the disabled opacity of the `PKSCard`.
+    ///
+    /// This modifier allows you to customize the opacity of a `PKSCard` when it is disabled.
+    ///
+    /// - Parameter opacity: The opacity value to apply when the card is disabled.
+    /// - Returns: A view that applies the specified opacity to the `PKSCard`.
+    ///
+    /// - Example:
+    /// ```swift
+    /// PKSCard {
+    ///     Text("Disabled Opacity Card")
+    /// }
+    /// .cardDisabledOpacity(0.5)
+    /// ```
+    public func cardDisabledOpacity(_ opacity: CGFloat) -> some View {
+        self.environment(\.pksDisabledOpacity, opacity)
+    }
 }

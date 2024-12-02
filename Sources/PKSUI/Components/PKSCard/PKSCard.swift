@@ -84,6 +84,11 @@ public struct PKSCard<Content: View, Header: View, Footer: View>: View {
     /// The insets of the card, sourced from the environment.
     @Environment(\.pksCardInsets) private var cardInsets
     
+    /// The opacity of the card when it is disabled, sourced from the environment.
+    @Environment(\.pksDisabledOpacity) private var disabledOpacity
+
+    /// Determines whether the card is disabled, sourced from the environment.
+    @Environment(\.isEnabled) private var isEnabled
     
     /// Initializes a `PKSCard` with content, a header, and a footer.
     ///
@@ -169,6 +174,7 @@ public struct PKSCard<Content: View, Header: View, Footer: View>: View {
                 }
             }
         }
+        .opacity(isEnabled ? 1 : disabledOpacity)
     }
 }
 
