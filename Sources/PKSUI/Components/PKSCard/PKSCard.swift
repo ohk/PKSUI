@@ -124,10 +124,18 @@ public struct PKSCard<Content: View, Header: View, Footer: View>: View {
     ///   - The content is contained within an accessibility element.
     ///   - The footer is marked as a static text trait.
     public var body: some View {
-        if #available(iOS 14.0, macOS 11.0, tvOS 14.0, watchOS 7.0, *) {
+        Group {
             VStack(alignment: containerAlignment, spacing: containerSpacing) {
                 header
-                    .accessibilityAddTraits(.isHeader)
+                    .conditionalRenderer { view in
+                        if #available(iOS 14.0, macOS 11.0, tvOS 14.0, watchOS 7.0, *) {
+                            view
+                                .accessibilityAddTraits(.isHeader)
+                        } else {
+                            view
+                        }
+                    }
+                   
                 if showDivider, !(header is EmptyView) {
                     Divider()
                 }
@@ -152,36 +160,15 @@ public struct PKSCard<Content: View, Header: View, Footer: View>: View {
                 y: shadowY
             )
             .accessibilityElement(children: .contain)
-            .accessibilityAddTraits(.isStaticText)
-        } else {
-            VStack(alignment: containerAlignment, spacing: containerSpacing) {
-                header
-                if showDivider, !(header is EmptyView) {
-                    Divider()
+            .conditionalRenderer { view in
+                if #available(iOS 14.0, macOS 11.0, tvOS 14.0, watchOS 7.0, *) {
+                    view
+                        .accessibilityAddTraits(.isStaticText)
+                } else {
+                    view
                 }
-                content
-                    .accessibilityElement(children: .contain)
-                if showDivider, !(footer is EmptyView) {
-                    Divider()
-                }
-                footer
             }
-            .padding(cardInsets)
-            .background(backgroundColor)
-            .clipShape(AnyShapeWrapper(shape: cardShape))
-            .overlay(
-                AnyShapeWrapper(shape: cardShape)
-                    .stroke(borderColor ?? .clear, lineWidth: borderWidth)
-            )
-            .shadow(
-                color: shadowColor,
-                radius: shadowRadius,
-                x: shadowX,
-                y: shadowY
-            )
-            .accessibilityElement(children: .contain)
         }
-        
     }
 }
 
