@@ -7,11 +7,11 @@
 
 import SwiftUI
 
-struct PKSPill<Label: View, Sh: Shape>: View {
+struct PKSPill<L: View, Sh: Shape>: View {
     @Environment(\.isEnabled) var isEnabled
     
     var action: () -> Void
-    var label: Label
+    var label: L
     
     var backgroundColor: Color = Color.red
     var shape: Sh
@@ -24,7 +24,7 @@ struct PKSPill<Label: View, Sh: Shape>: View {
     
     init(
         action: @escaping @MainActor () -> Void,
-        @ViewBuilder label: () -> Label
+        @ViewBuilder label: () -> L
     ) where Sh == Capsule {
         self.action = action
         self.label = label()
@@ -35,7 +35,12 @@ struct PKSPill<Label: View, Sh: Shape>: View {
         Button {
             action()
         } label: {
+            // TODO: Please delete duplicate codes
             if let label = label as? Text {
+                label
+                    .padding(inset)
+                    .background(backgroundColor, in: shape)
+            } else if let label = label as? Label<Text,Image> {
                 label
                     .padding(inset)
                     .background(backgroundColor, in: shape)
@@ -103,7 +108,7 @@ struct PKSPill<Label: View, Sh: Shape>: View {
     }
 }
 
-extension PKSPill where Label == Text {
+extension PKSPill where L == Text {
     init<S: StringProtocol> (
         _ title: S,
         action: @escaping @MainActor () -> Void
@@ -123,6 +128,35 @@ extension PKSPill where Label == Text {
     ) {
         label = {
             Text(title)
+        }()
+        
+        self.action = action
+        self.shape = backgroundShape
+    }
+}
+
+extension PKSPill where L == Label<Text, Image>{
+    init<S: StringProtocol> (
+        _ title: S,
+        systemImage: String,
+        action: @escaping @MainActor () -> Void
+    ) where Sh == Capsule {
+        label = {
+            Label(title, systemImage: systemImage)
+        }()
+        
+        self.action = action
+        self.shape = Capsule()
+    }
+    
+    init<S: StringProtocol> (
+        _ title: S,
+        systemImage: String,
+        backgroundShape: Sh,
+        action: @escaping @MainActor () -> Void
+    ) {
+        label = {
+            Label(title, systemImage: systemImage)
         }()
         
         self.action = action
@@ -186,8 +220,8 @@ extension PKSPill where Label == Text {
         debugPrint("On Tap")
     } label: {
         HStack {
-            Rectangle()
-                .fill(Color.red)
+            Image(systemName: "clock")
+                .resizable()
                 .frame(width: 20, height: 20)
             
             Text("Hello World")
@@ -195,4 +229,8 @@ extension PKSPill where Label == Text {
         }
     }
     .disabled(true)
+    
+    PKSPill("Change Clock", systemImage: "clock") {
+        debugPrint("Clock clicked")
+    }
 }
