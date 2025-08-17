@@ -7,11 +7,14 @@
 
 import SwiftUI
 
-struct PKSPill<Label: View>: View {
+struct PKSPill<Label: View, Sh: Shape>: View {
+    @Environment(\.isEnabled) var isEnabled
+    
     var action: () -> Void
     var label: Label
     
     var backgroundColor: Color = Color.red
+    var shape: Sh
     var inset: EdgeInsets = EdgeInsets(
         top: 8,
         leading: 16,
@@ -22,9 +25,10 @@ struct PKSPill<Label: View>: View {
     init(
         action: @escaping @MainActor () -> Void,
         @ViewBuilder label: () -> Label
-    ) {
+    ) where Sh == Capsule {
         self.action = action
         self.label = label()
+        self.shape = Capsule()
     }
     
     var body: some View {
@@ -34,11 +38,12 @@ struct PKSPill<Label: View>: View {
             if let label = label as? Text {
                 label
                     .padding(inset)
-                    .background(backgroundColor, in: Capsule())
+                    .background(backgroundColor, in: shape)
             } else {
                 label
             }
         }
+        .opacity(isEnabled ? 1 : 0.5)
     }
     
     public func setInset(_ inset: EdgeInsets) -> Self {
@@ -90,11 +95,30 @@ struct PKSPill<Label: View>: View {
             view.inset = local
         }
     }
+    
+    public func backgroundColor(_ color: Color) -> Self {
+        map { view in
+            view.backgroundColor = color
+        }
+    }
 }
 
 extension PKSPill where Label == Text {
     init<S: StringProtocol> (
         _ title: S,
+        action: @escaping @MainActor () -> Void
+    ) where Sh == Capsule {
+        label = {
+            Text(title)
+        }()
+        
+        self.action = action
+        self.shape = Capsule()
+    }
+    
+    init<S: StringProtocol> (
+        _ title: S,
+        backgroundShape: Sh,
         action: @escaping @MainActor () -> Void
     ) {
         label = {
@@ -102,6 +126,7 @@ extension PKSPill where Label == Text {
         }()
         
         self.action = action
+        self.shape = backgroundShape
     }
 }
 
@@ -135,7 +160,14 @@ extension PKSPill where Label == Text {
         }
         .foregroundStyle(.black)
         .font(.largeTitle)
+        
+        PKSPill("Hello", backgroundShape: RoundedRectangle(cornerRadius: 16)) {
+            debugPrint("Hello World")
+        }
+        .foregroundStyle(.black)
+        .font(.body)
     }
+    .disabled(true)
     
     PKSPill {
         debugPrint("On Tap")
@@ -162,4 +194,5 @@ extension PKSPill where Label == Text {
             
         }
     }
+    .disabled(true)
 }
