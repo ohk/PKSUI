@@ -51,9 +51,9 @@ struct PKSPill<L: View, Sh: Shape>: View {
         } label: {
             // Type checking to apply styling appropriately
             // Text and Label types get the pill styling applied
-            if let label = label as? Text {
+            if label is Text {
                 preparedLabel
-            } else if let label = label as? Label<Text,Image> {
+            } else if label is Label<Text,Image> {
                 preparedLabel
             } else {
                 // Custom views are rendered as-is without automatic styling
