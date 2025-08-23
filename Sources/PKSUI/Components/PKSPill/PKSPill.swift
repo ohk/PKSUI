@@ -15,8 +15,10 @@ struct PKSPill<L: View, Sh: Shape>: View {
     /// Environment value to track if the view is enabled/disabled
     @Environment(\.isEnabled) var isEnabled
     
+    @State private var isSelected: Bool = false
+    
     /// The action to perform when the pill is tapped
-    let action: () -> Void
+    let action: (Bool) -> Void
     /// The content to display inside the pill
     let label: L
     /// The shape used for the pill's background
@@ -37,7 +39,7 @@ struct PKSPill<L: View, Sh: Shape>: View {
     ///   - action: The action to perform when tapped
     ///   - label: A ViewBuilder closure that provides the content
     init(
-        action: @escaping @MainActor () -> Void,
+        action: @escaping @MainActor (Bool) -> Void,
         @ViewBuilder label: () -> L
     ) where Sh == Capsule {
         self.action = action
@@ -47,7 +49,9 @@ struct PKSPill<L: View, Sh: Shape>: View {
     
     var body: some View {
         Button {
-            action()
+            let value = isSelected
+            isSelected = !value
+            action(!value)
         } label: {
             // Type checking to apply styling appropriately
             // Text and Label types get the pill styling applied
@@ -147,7 +151,7 @@ extension PKSPill where L == Text {
     ///   - action: The action to perform when tapped
     init<S: StringProtocol>(
         _ title: S,
-        action: @escaping @MainActor () -> Void
+        action: @escaping @MainActor (Bool) -> Void
     ) where Sh == Capsule {
         self.label = Text(title)
         self.action = action
@@ -162,7 +166,7 @@ extension PKSPill where L == Text {
     init<S: StringProtocol>(
         _ title: S,
         backgroundShape: Sh,
-        action: @escaping @MainActor () -> Void
+        action: @escaping @MainActor (Bool) -> Void
     ) {
         self.label = Text(title)
         self.action = action
@@ -180,7 +184,7 @@ extension PKSPill where L == Label<Text, Image> {
     init<S: StringProtocol>(
         _ title: S,
         systemImage: String,
-        action: @escaping @MainActor () -> Void
+        action: @escaping @MainActor (Bool) -> Void
     ) where Sh == Capsule {
         self.label = Label(title, systemImage: systemImage)
         self.action = action
@@ -197,7 +201,7 @@ extension PKSPill where L == Label<Text, Image> {
         _ title: S,
         systemImage: String,
         backgroundShape: Sh,
-        action: @escaping @MainActor () -> Void
+        action: @escaping @MainActor (Bool) -> Void
     ) {
         self.label = Label(title, systemImage: systemImage)
         self.action = action
@@ -205,11 +209,46 @@ extension PKSPill where L == Label<Text, Image> {
     }
 }
 
+
+extension PKSPill {
+    init(
+        _ selection: Binding<Bool>,
+        @ViewBuilder label: () -> L
+    ) where Sh == Capsule {
+        self.action = { isSelected in
+            selection.wrappedValue = isSelected
+        }
+        self.label = label()
+        self.shape = Capsule() // Default to capsule shape
+        self._isSelected = State(initialValue: selection.wrappedValue)
+    }
+}
+
+extension PKSPill where L == Text {
+    /// Creates a pill with a text label and default capsule shape
+    /// - Parameters:
+    ///   - title: The text to display
+    ///   - action: The action to perform when tapped
+    init<S: StringProtocol>(
+        _ title: S,
+        selection: Binding<Bool>
+    ) where Sh == Capsule {
+        self.label = Text(title)
+        self.action = { isSelected in
+            selection.wrappedValue = isSelected
+        }
+        self.shape = Capsule()
+        
+        self._isSelected = State(initialValue: selection.wrappedValue)
+    }
+}
+
 // MARK: - Preview
 #Preview {
     VStack(spacing: 20) {
-        PKSPill {
-            debugPrint("On Tap")
+        
+        PKSPill { isSelected in
+            debugPrint("On Tap, \(isSelected)")
         } label: {
             Rectangle()
                 .fill(Color.red)
@@ -217,8 +256,8 @@ extension PKSPill where L == Label<Text, Image> {
         }
         
         HStack {
-            PKSPill("Hello") {
-                debugPrint("Hello World")
+            PKSPill("Hello") { isSelected in
+                debugPrint("Hello World, \(isSelected)")
             }
             .setInset(
                 EdgeInsets(
@@ -231,22 +270,22 @@ extension PKSPill where L == Label<Text, Image> {
             .foregroundStyle(.black)
             .font(.largeTitle)
             
-            PKSPill("Hello") {
-                debugPrint("Hello World")
+            PKSPill("Hello") { isSelected in
+                debugPrint("Hello World, \(isSelected)")
             }
             .foregroundStyle(.black)
             .font(.largeTitle)
             
-            PKSPill("Hello", backgroundShape: RoundedRectangle(cornerRadius: 16)) {
-                debugPrint("Hello World")
+            PKSPill("Hello", backgroundShape: RoundedRectangle(cornerRadius: 16)) { isSelected in
+                debugPrint("Hello World, \(isSelected)")
             }
             .foregroundStyle(.black)
             .font(.body)
         }
         .disabled(true)
         
-        PKSPill {
-            debugPrint("On Tap")
+        PKSPill { isSelected in
+            debugPrint("Hello World, \(isSelected)")
         } label: {
             HStack {
                 Text("Hello World")
@@ -256,8 +295,8 @@ extension PKSPill where L == Label<Text, Image> {
             }
         }
         
-        PKSPill {
-            debugPrint("On Tap")
+        PKSPill { isSelected in
+            debugPrint("Hello World, \(isSelected)")
         } label: {
             HStack {
                 Image(systemName: "clock")
@@ -269,8 +308,8 @@ extension PKSPill where L == Label<Text, Image> {
         }
         .disabled(true)
         
-        PKSPill("Change Clock", systemImage: "clock") {
-            debugPrint("Clock clicked")
+        PKSPill("Change Clock", systemImage: "clock") { isSelected in
+            debugPrint("Clock Clicked, \(isSelected)")
         }
     }
 }
