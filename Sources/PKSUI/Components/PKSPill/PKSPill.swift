@@ -206,7 +206,6 @@ extension PKSPill where L == Label<Text, Image> {
 }
 
 // MARK: - Preview
-#if DEBUG && canImport(PreviewsMacros)
 #Preview {
     VStack(spacing: 20) {
         PKSPill {
@@ -275,4 +274,3 @@ extension PKSPill where L == Label<Text, Image> {
         }
     }
 }
-#endif
