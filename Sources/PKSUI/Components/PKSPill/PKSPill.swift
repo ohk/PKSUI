@@ -7,37 +7,96 @@
 
 import SwiftUI
 
-/// A customizable pill-shaped button component that can display any content
+/// A customizable pill-shaped button component that can display any content.
+///
+/// `PKSPill` provides a flexible button component with a pill-shaped appearance that can be customized
+/// with different content types, shapes, colors, and padding. It supports selection state tracking
+/// and integrates with the PKSPillSection for grouped selections.
+///
+/// ## Usage Examples
+///
+/// ### Basic text pill:
+/// ```swift
+/// PKSPill("Click me") { isSelected in
+///     print("Pill selected: \(isSelected)")
+/// }
+/// ```
+///
+/// ### Pill with custom content:
+/// ```swift
+/// PKSPill { isSelected in
+///     handleSelection(isSelected)
+/// } label: {
+///     HStack {
+///         Image(systemName: "star.fill")
+///         Text("Favorite")
+///     }
+/// }
+/// .pillBackgroundColor(.yellow)
+/// ```
+///
+/// ### Pill with binding:
+/// ```swift
+/// @State private var isOn = false
+/// PKSPill("Toggle", selection: $isOn)
+/// ```
+///
 /// - Parameters:
 ///   - L: The type of view used as the label content
 ///   - Sh: The shape type used for the background (default: Capsule)
-struct PKSPill<L: View, Sh: Shape>: View {
-    /// Environment value to track if the view is enabled/disabled
+///
+/// - Note: This component automatically adjusts its opacity when disabled through the SwiftUI environment.
+public struct PKSPill<L: View, Sh: Shape>: View {
+    /// Environment value to track if the view is enabled/disabled.
     @Environment(\.isEnabled) var isEnabled
     
-    /// The action to perform when the pill is tapped
-    let action: () -> Void
-    /// The content to display inside the pill
-    let label: L
-    /// The shape used for the pill's background
-    let shape: Sh
+    /// Environment closure for updating selection status in a parent PKSPillSection.
+    @Environment(\.pksPillSectionStatusUpdate) private var statusUpdate
     
-    /// Background color of the pill (default: red)
-    var backgroundColor: Color = .red
-    /// Padding around the label content
-    var inset: EdgeInsets = EdgeInsets(
+    /// Environment value containing the parent section's title.
+    @Environment(\.pksPillSectionTitle) private var sectionTitle
+    
+    /// Tracks the current selection state of the pill.
+    @State private var isSelected: Bool = false
+    
+    /// The action to perform when the pill is tapped.
+    ///
+    /// - Parameter isSelected: The new selection state after the tap.
+    private let action: (Bool) -> Void
+    
+    /// The content to display inside the pill.
+    private let label: L
+    
+    /// The shape used for the pill's background.
+    private let shape: Sh
+    
+    /// Background color of the pill.
+    ///
+    /// - Note: Defaults to system gray color.
+    private var backgroundColor: Color = Color(uiColor: UIColor.systemGray)
+    
+    /// Padding around the label content.
+    ///
+    /// - Note: Default padding is 8pt vertical and 16pt horizontal.
+    private var inset: EdgeInsets = EdgeInsets(
         top: 8,
         leading: 16,
         bottom: 8,
         trailing: 16
     )
     
-    /// Primary initializer for creating a pill with custom content
+    /// Unique identifier for this pill within a PKSPillSection.
+    private var pillTag: AnyHashable?
+    
+    /// Creates a pill with custom content and default capsule shape.
+    ///
+    /// This is the primary initializer for creating pills with any custom SwiftUI view as content.
+    ///
     /// - Parameters:
-    ///   - action: The action to perform when tapped
-    ///   - label: A ViewBuilder closure that provides the content
-    init(
-        action: @escaping @MainActor () -> Void,
+    ///   - action: A closure called when the pill is tapped, receiving the new selection state.
+    ///   - label: A ViewBuilder closure that provides the content to display inside the pill.
+    public init(
+        action: @escaping @MainActor (Bool) -> Void,
         @ViewBuilder label: () -> L
     ) where Sh == Capsule {
         self.action = action
@@ -45,25 +104,31 @@ struct PKSPill<L: View, Sh: Shape>: View {
         self.shape = Capsule() // Default to capsule shape
     }
     
-    var body: some View {
+    public var body: some View {
         Button {
-            action()
+            let value = isSelected
+            isSelected = !value
+            action(!value)
+            
+            if let pillTag, let sectionTitle {
+                statusUpdate?(sectionTitle, pillTag)
+            }
         } label: {
-            // Type checking to apply styling appropriately
-            // Text and Label types get the pill styling applied
-            if let label = label as? Text {
+            if label is Text {
                 preparedLabel
-            } else if let label = label as? Label<Text,Image> {
+            } else if label is Label<Text,Image> {
                 preparedLabel
             } else {
-                // Custom views are rendered as-is without automatic styling
                 label
             }
         }
-        .opacity(isEnabled ? 1 : 0.5) // Reduce opacity when disabled
+        .opacity(isEnabled ? 1 : 0.5)
     }
     
-    var preparedLabel: some View {
+    /// Prepares the label with appropriate padding and background.
+    ///
+    /// This computed property applies the configured insets and background color to the label content.
+    private var preparedLabel: some View {
         label
             .padding(inset)
             .background(backgroundColor, in: shape)
@@ -71,22 +136,57 @@ struct PKSPill<L: View, Sh: Shape>: View {
 }
 
 // MARK: - View Modifiers
+
 extension PKSPill {
-    /// Sets custom padding around the label content
-    /// - Parameter inset: The EdgeInsets to apply
-    /// - Returns: Modified instance with new insets
-    public func setInset(_ inset: EdgeInsets) -> Self {
+    /// Sets custom padding around the label content.
+    ///
+    /// Use this modifier to customize the internal padding of the pill content.
+    ///
+    /// ## Example
+    /// ```swift
+    /// PKSPill("Custom Padding") { _ in }
+    ///     .pillInset(EdgeInsets(top: 12, leading: 20, bottom: 12, trailing: 20))
+    /// ```
+    ///
+    /// - Parameter inset: The EdgeInsets to apply to all sides of the content.
+    /// - Returns: A modified instance with the specified insets.
+    public func pillInset(_ inset: EdgeInsets) -> Self {
         map { view in
             view.inset = inset
         }
     }
     
-    /// Sets uniform padding for specific edges
+    /// Sets a unique identifier for this pill within a PKSPillSection.
+    ///
+    /// This tag is used by PKSPillSection to track which pills are selected when selection limits are enforced.
+    ///
+    /// - Parameter tag: A hashable value that uniquely identifies this pill.
+    /// - Returns: A modified instance with the specified tag.
+    ///
+    /// - Important: This modifier is required when using pills within a PKSPillSection with selection limits.
+    public func setPillTag(_ tag: AnyHashable) -> Self {
+        map { view in
+            view.pillTag = tag
+        }
+    }
+    
+    /// Sets uniform padding for specific edges.
+    ///
+    /// This convenience method allows you to set the same padding value for one or more edges.
+    ///
+    /// ## Example
+    /// ```swift
+    /// PKSPill("Horizontal Padding") { _ in }
+    ///     .pillInset(.horizontal, 24)
+    /// ```
+    ///
     /// - Parameters:
-    ///   - edges: The edges to apply padding to (.all, .horizontal, .vertical, or specific edges)
-    ///   - length: The padding amount in points
-    /// - Returns: Modified instance with new insets
-    public func setInset(_ edges: Edge.Set, _ length: CGFloat) -> Self {
+    ///   - edges: The edges to apply padding to (.all, .horizontal, .vertical, or specific edges).
+    ///   - length: The padding amount in points.
+    /// - Returns: A modified instance with the specified insets.
+    ///
+    /// - Note: When using .horizontal or .vertical, the padding is applied to both edges in that direction.
+    public func pillInset(_ edges: Edge.Set, _ length: CGFloat) -> Self {
         map { view in
             var local = view.inset
             
@@ -129,10 +229,17 @@ extension PKSPill {
         }
     }
     
-    /// Sets the background color of the pill
-    /// - Parameter color: The color to use for the background
-    /// - Returns: Modified instance with new background color
-    public func backgroundColor(_ color: Color) -> Self {
+    /// Sets the background color of the pill.
+    ///
+    /// ## Example
+    /// ```swift
+    /// PKSPill("Green Pill") { _ in }
+    ///     .pillBackgroundColor(.green)
+    /// ```
+    ///
+    /// - Parameter color: The color to use for the pill's background.
+    /// - Returns: A modified instance with the specified background color.
+    public func pillBackgroundColor(_ color: Color) -> Self {
         map { view in
             view.backgroundColor = color
         }
@@ -140,29 +247,50 @@ extension PKSPill {
 }
 
 // MARK: - Text Convenience Initializers
+
 extension PKSPill where L == Text {
-    /// Creates a pill with a text label and default capsule shape
+    /// Creates a pill with a text label and default capsule shape.
+    ///
+    /// This convenience initializer simplifies creating text-only pills.
+    ///
+    /// ## Example
+    /// ```swift
+    /// PKSPill("Tap me") { isSelected in
+    ///     print("Selected: \(isSelected)")
+    /// }
+    /// ```
+    ///
     /// - Parameters:
-    ///   - title: The text to display
-    ///   - action: The action to perform when tapped
-    init<S: StringProtocol>(
+    ///   - title: The text to display in the pill.
+    ///   - action: A closure called when the pill is tapped, receiving the new selection state.
+    public init<S: StringProtocol>(
         _ title: S,
-        action: @escaping @MainActor () -> Void
+        action: @escaping @MainActor (Bool) -> Void
     ) where Sh == Capsule {
         self.label = Text(title)
         self.action = action
         self.shape = Capsule()
     }
     
-    /// Creates a pill with a text label and custom shape
+    /// Creates a pill with a text label and custom shape.
+    ///
+    /// Use this initializer when you want a text pill with a non-capsule shape.
+    ///
+    /// ## Example
+    /// ```swift
+    /// PKSPill("Rounded", backgroundShape: RoundedRectangle(cornerRadius: 8)) { isSelected in
+    ///     handleSelection(isSelected)
+    /// }
+    /// ```
+    ///
     /// - Parameters:
-    ///   - title: The text to display
-    ///   - backgroundShape: Custom shape for the background
-    ///   - action: The action to perform when tapped
-    init<S: StringProtocol>(
+    ///   - title: The text to display in the pill.
+    ///   - backgroundShape: Custom shape for the pill's background.
+    ///   - action: A closure called when the pill is tapped, receiving the new selection state.
+    public init<S: StringProtocol>(
         _ title: S,
         backgroundShape: Sh,
-        action: @escaping @MainActor () -> Void
+        action: @escaping @MainActor (Bool) -> Void
     ) {
         self.label = Text(title)
         self.action = action
@@ -171,46 +299,128 @@ extension PKSPill where L == Text {
 }
 
 // MARK: - Label Convenience Initializers
+
 extension PKSPill where L == Label<Text, Image> {
-    /// Creates a pill with text and system image icon
+    /// Creates a pill with text and system image icon.
+    ///
+    /// This convenience initializer creates pills with both text and SF Symbol icons.
+    ///
+    /// ## Example
+    /// ```swift
+    /// PKSPill("Settings", systemImage: "gear") { isSelected in
+    ///     navigateToSettings()
+    /// }
+    /// ```
+    ///
     /// - Parameters:
-    ///   - title: The text to display
-    ///   - systemImage: The SF Symbol name for the icon
-    ///   - action: The action to perform when tapped
-    init<S: StringProtocol>(
+    ///   - title: The text to display in the pill.
+    ///   - systemImage: The SF Symbol name for the icon.
+    ///   - action: A closure called when the pill is tapped, receiving the new selection state.
+    public init<S: StringProtocol>(
         _ title: S,
         systemImage: String,
-        action: @escaping @MainActor () -> Void
+        action: @escaping @MainActor (Bool) -> Void
     ) where Sh == Capsule {
         self.label = Label(title, systemImage: systemImage)
         self.action = action
         self.shape = Capsule()
     }
     
-    /// Creates a pill with text, system image icon, and custom shape
+    /// Creates a pill with text, system image icon, and custom shape.
+    ///
+    /// Combines text, icon, and custom shape for maximum customization.
+    ///
+    /// ## Example
+    /// ```swift
+    /// PKSPill("Download", systemImage: "arrow.down.circle",
+    ///         backgroundShape: RoundedRectangle(cornerRadius: 12)) { isSelected in
+    ///     startDownload()
+    /// }
+    /// ```
+    ///
     /// - Parameters:
-    ///   - title: The text to display
-    ///   - systemImage: The SF Symbol name for the icon
-    ///   - backgroundShape: Custom shape for the background
-    ///   - action: The action to perform when tapped
-    init<S: StringProtocol>(
+    ///   - title: The text to display in the pill.
+    ///   - systemImage: The SF Symbol name for the icon.
+    ///   - backgroundShape: Custom shape for the pill's background.
+    ///   - action: A closure called when the pill is tapped, receiving the new selection state.
+    public init<S: StringProtocol>(
         _ title: S,
         systemImage: String,
         backgroundShape: Sh,
-        action: @escaping @MainActor () -> Void
+        action: @escaping @MainActor (Bool) -> Void
     ) {
         self.label = Label(title, systemImage: systemImage)
         self.action = action
         self.shape = backgroundShape
     }
 }
+// MARK: - Binding Initializers
+
+extension PKSPill {
+    /// Creates a pill that synchronizes with a binding value.
+    ///
+    /// Use this initializer when you want the pill's selection state to be controlled by external state.
+    ///
+    /// ## Example
+    /// ```swift
+    /// @State private var isFilterActive = false
+    ///
+    /// PKSPill($isFilterActive) {
+    ///     Label("Filter", systemImage: "line.horizontal.3.decrease.circle")
+    /// }
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - selection: A binding to a Boolean value that tracks the pill's selection state.
+    ///   - label: A ViewBuilder closure that provides the content to display inside the pill.
+    public init(
+        _ selection: Binding<Bool>,
+        @ViewBuilder label: () -> L
+    ) where Sh == Capsule {
+        self.action = { isSelected in
+            selection.wrappedValue = isSelected
+        }
+        self.label = label()
+        self.shape = Capsule() // Default to capsule shape
+        self._isSelected = State(initialValue: selection.wrappedValue)
+    }
+}
+
+extension PKSPill where L == Text {
+    /// Creates a text pill that synchronizes with a binding value.
+    ///
+    /// This convenience initializer combines text content with binding-based selection.
+    ///
+    /// ## Example
+    /// ```swift
+    /// @State private var showAdvanced = false
+    ///
+    /// PKSPill("Advanced Options", selection: $showAdvanced)
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - title: The text to display in the pill.
+    ///   - selection: A binding to a Boolean value that tracks the pill's selection state.
+    public init<S: StringProtocol>(
+        _ title: S,
+        selection: Binding<Bool>
+    ) where Sh == Capsule {
+        self.label = Text(title)
+        self.action = { isSelected in
+            selection.wrappedValue = isSelected
+        }
+        self.shape = Capsule()
+        
+        self._isSelected = State(initialValue: selection.wrappedValue)
+    }
+}
 
 // MARK: - Preview
-#if DEBUG && canImport(PreviewsMacros)
 #Preview {
     VStack(spacing: 20) {
-        PKSPill {
-            debugPrint("On Tap")
+        
+        PKSPill { isSelected in
+            debugPrint("On Tap, \(isSelected)")
         } label: {
             Rectangle()
                 .fill(Color.red)
@@ -218,10 +428,10 @@ extension PKSPill where L == Label<Text, Image> {
         }
         
         HStack {
-            PKSPill("Hello") {
-                debugPrint("Hello World")
+            PKSPill("Hello") { isSelected in
+                debugPrint("Hello World, \(isSelected)")
             }
-            .setInset(
+            .pillInset(
                 EdgeInsets(
                     top: 24,
                     leading: 24,
@@ -232,22 +442,22 @@ extension PKSPill where L == Label<Text, Image> {
             .foregroundStyle(.black)
             .font(.largeTitle)
             
-            PKSPill("Hello") {
-                debugPrint("Hello World")
+            PKSPill("Hello") { isSelected in
+                debugPrint("Hello World, \(isSelected)")
             }
             .foregroundStyle(.black)
             .font(.largeTitle)
             
-            PKSPill("Hello", backgroundShape: RoundedRectangle(cornerRadius: 16)) {
-                debugPrint("Hello World")
+            PKSPill("Hello", backgroundShape: RoundedRectangle(cornerRadius: 16)) { isSelected in
+                debugPrint("Hello World, \(isSelected)")
             }
             .foregroundStyle(.black)
             .font(.body)
         }
         .disabled(true)
         
-        PKSPill {
-            debugPrint("On Tap")
+        PKSPill { isSelected in
+            debugPrint("Hello World, \(isSelected)")
         } label: {
             HStack {
                 Text("Hello World")
@@ -257,8 +467,8 @@ extension PKSPill where L == Label<Text, Image> {
             }
         }
         
-        PKSPill {
-            debugPrint("On Tap")
+        PKSPill { isSelected in
+            debugPrint("Hello World, \(isSelected)")
         } label: {
             HStack {
                 Image(systemName: "clock")
@@ -270,9 +480,8 @@ extension PKSPill where L == Label<Text, Image> {
         }
         .disabled(true)
         
-        PKSPill("Change Clock", systemImage: "clock") {
-            debugPrint("Clock clicked")
+        PKSPill("Change Clock", systemImage: "clock") { isSelected in
+            debugPrint("Clock Clicked, \(isSelected)")
         }
     }
 }
-#endif
