@@ -13,8 +13,17 @@ let package = Package(
             targets: ["PKSUI"]
         )
     ],
+    dependencies: [
+        .package(url: "https://github.com/kean/Nuke", from: "12.0.0")
+    ],
     targets: [        
-        .target(name: "PKSUI"),
+        .target(
+            name: "PKSUI",
+            dependencies: [
+                "Nuke",
+                .product(name: "NukeUI", package: "Nuke")
+            ]
+        ),
         .testTarget(
             name: "PKSUITests",
             dependencies: ["PKSUI"]
