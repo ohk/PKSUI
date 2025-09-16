@@ -34,6 +34,10 @@ public final class PKSImageCacheManager {
     public private(set) var configuration: PKSImageCacheConfiguration
 
     /// The underlying image pipeline.
+    /// - Important: This property uses `nonisolated(unsafe)` for performance reasons.
+    ///   The pipeline is only modified during configuration (which is MainActor-isolated)
+    ///   and all reads after initialization are safe as ImagePipeline is thread-safe.
+    ///   The singleton pattern ensures there's only one instance managing this pipeline.
     private nonisolated(unsafe) var pipeline: ImagePipeline
 
     /// Private initializer to ensure singleton.

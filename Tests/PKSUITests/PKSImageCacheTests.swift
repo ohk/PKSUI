@@ -12,6 +12,12 @@ import SwiftUI
 @MainActor
 final class PKSImageCacheTests: XCTestCase {
 
+    // Constants for time calculations
+    private static let secondsPerMinute = 60
+    private static let minutesPerHour = 60
+    private static let hoursPerDay = 24
+    private static let secondsPerDay = secondsPerMinute * minutesPerHour * hoursPerDay
+
     override func setUp() {
         super.setUp()
         // Clear all caches before each test
@@ -56,7 +62,7 @@ final class PKSImageCacheTests: XCTestCase {
         // Test expiration time interval
         if case .days(let days) = config.expiration {
             XCTAssertEqual(days, 7)
-            XCTAssertEqual(config.expiration.timeInterval, TimeInterval(7 * 24 * 60 * 60))
+            XCTAssertEqual(config.expiration.timeInterval, TimeInterval(7 * Self.secondsPerDay))
         } else {
             XCTFail("Expected expiration to be .days(7)")
         }
@@ -145,7 +151,7 @@ final class PKSImageCacheTests: XCTestCase {
 
         // Test days expiration
         let daysExpiration = PKSDiskCacheConfiguration.Expiration.days(7)
-        XCTAssertEqual(daysExpiration.timeInterval, TimeInterval(7 * 24 * 60 * 60))
+        XCTAssertEqual(daysExpiration.timeInterval, TimeInterval(7 * Self.secondsPerDay))
     }
 
     func testCachePolicies() {

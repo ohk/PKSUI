@@ -15,7 +15,14 @@
       "Bash(xcode-select:*)",
       "mcp__github__get_pull_request",
       "mcp__github__get_pull_request_review_comments",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)",
+      "Bash(cat:*)",
+      "mcp__github__get_pull_request_reviews",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []

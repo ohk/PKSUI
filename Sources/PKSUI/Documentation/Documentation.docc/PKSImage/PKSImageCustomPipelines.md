@@ -383,13 +383,25 @@ class EncryptedDataCache: DataCaching {
     }
 
     private func encrypt(_ data: Data) -> Data {
-        // Implement encryption
-        return data // Placeholder
+        // WARNING: This is a placeholder implementation for demonstration only.
+        // DO NOT use this in production code.
+        // For actual encryption, use proper cryptographic libraries like:
+        // - Apple's CryptoKit framework
+        // - CommonCrypto
+        // - Third-party libraries like CryptoSwift
+        // Example: import CryptoKit and use AES.GCM for encryption
+        fatalError("Encryption not implemented. Replace with actual encryption logic before use.")
     }
 
     private func decrypt(_ data: Data) -> Data {
-        // Implement decryption
-        return data // Placeholder
+        // WARNING: This is a placeholder implementation for demonstration only.
+        // DO NOT use this in production code.
+        // For actual decryption, use proper cryptographic libraries like:
+        // - Apple's CryptoKit framework
+        // - CommonCrypto
+        // - Third-party libraries like CryptoSwift
+        // Example: import CryptoKit and use AES.GCM for decryption
+        fatalError("Decryption not implemented. Replace with actual decryption logic before use.")
     }
 }
 ```

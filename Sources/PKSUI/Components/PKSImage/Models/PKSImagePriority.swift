@@ -30,19 +30,20 @@ import os
 public struct PKSImagePriority: Equatable, Sendable {
     /// The raw priority value (0-1000)
     public let rawValue: Int
-    
+
+    /// Shared logger instance for PKSImagePriority
+    private static let logger = Logger(subsystem: "PKSUI", category: "PKSImagePriority")
+
     /// Creates a new priority with the specified raw value.
     ///
     /// - Parameter rawValue: The priority value (recommended range: 0-1000)
     /// - Note: Values outside 0-1000 will be clamped and a warning will be logged
     public init(rawValue: Int) {
         if rawValue < 0 {
-            let logger = Logger(subsystem: "PKSUI", category: "PKSImagePriority")
-            logger.warning("Value \(rawValue) is less than 0, clamping to 0")
+            Self.logger.warning("Value \(rawValue) is less than 0, clamping to 0")
             self.rawValue = 0
         } else if rawValue > 1000 {
-            let logger = Logger(subsystem: "PKSUI", category: "PKSImagePriority")
-            logger.warning("Value \(rawValue) is greater than 1000, clamping to 1000")
+            Self.logger.warning("Value \(rawValue) is greater than 1000, clamping to 1000")
             self.rawValue = 1000
         } else {
             self.rawValue = rawValue
