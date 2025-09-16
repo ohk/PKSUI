@@ -51,6 +51,9 @@ public struct PKSPillSection<Header: View, Content: View>: View {
     /// Environment value for propagating selection updates to parent views.
     @Environment(\.pksPillSectionStatusUpdate) private var sectionStatusUpdate
     
+    /// Environment value for propagating selection updates to parent group.
+    @Environment(\.pksPillGroupSelectionUpdate) private var groupSelectionUpdate
+    
     /// Creates a pill section with a custom header.
     ///
     /// - Parameters:
@@ -130,6 +133,9 @@ extension PKSPillSection {
             
             selectedItems.append(item)
         }
+        
+        // Notify parent group if present
+        groupSelectionUpdate?(title, selectedItems)
     }
     
     /// Sets the selection limit for pills within this section.
@@ -187,5 +193,3 @@ extension PKSPillSection {
     .selectionLimit(.multiple(limit: 2))
 }
 */
-
-
