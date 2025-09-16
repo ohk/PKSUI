@@ -107,9 +107,9 @@ public struct PKSImage<Content>: View where Content: View {
 
         // Use custom pipeline if cache configuration is provided
         if useCustomPipeline, let _ = cacheConfiguration {
-            lazyImage.pipeline(PKSImageCacheManager.shared.imagePipeline)
+            return lazyImage.pipeline(PKSImageCacheManager.shared.imagePipeline)
         } else {
-            lazyImage
+            return lazyImage
         }
     }
 

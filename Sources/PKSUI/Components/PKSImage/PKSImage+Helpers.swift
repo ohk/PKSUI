@@ -47,20 +47,14 @@ extension PKSImage {
             newStatus = .loading(currentProgress)
         } else if state.image != nil {
             newStatus = .success
-            // Update progress to indicate completion from cache if applicable
-            if state.imageContainer?.isPreview == true {
-                currentProgress = PKSImageProgress(isFromCache: true)
-            }
+            // Preview images are partial downloads, not cached images
+            // Do not set isFromCache for preview images
         } else if let error = state.error {
             newStatus = .failure(error)
         } else {
             newStatus = .idle
         }
 
-        if case .loading = lastStatus, case .loading = newStatus {
-            // Don't fire callback for progress updates within loading state
-            return
-        }
 
         if case .success = lastStatus, case .success = newStatus {
             // Don't fire multiple success callbacks

@@ -88,6 +88,8 @@ extension PKSImageManager {
     /// let stats = PKSImageManager.cacheStatistics
     /// print("Memory cache: \(stats.memoryCacheTotalCount) items")
     /// print("Memory usage: \(stats.memoryCacheTotalCost) bytes")
+    /// print("Disk cache: \(stats.diskCacheTotalCount) items")
+    /// print("Disk usage: \(stats.diskCacheTotalSize) bytes")
     /// ```
     public static var cacheStatistics: PKSImageCacheManager.CacheStatistics {
         return PKSImageCacheManager.shared.statistics

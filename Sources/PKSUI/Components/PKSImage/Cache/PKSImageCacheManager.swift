@@ -34,7 +34,7 @@ public final class PKSImageCacheManager {
     public private(set) var configuration: PKSImageCacheConfiguration
 
     /// The underlying image pipeline.
-    private var pipeline: ImagePipeline
+    private nonisolated(unsafe) var pipeline: ImagePipeline
 
     /// Private initializer to ensure singleton.
     private init() {
@@ -133,7 +133,7 @@ public final class PKSImageCacheManager {
 
     /// Returns the current image pipeline configured for caching.
     internal nonisolated var imagePipeline: ImagePipeline {
-        return ImagePipeline.shared
+        return self.pipeline
     }
 
     /// Clears all cached images from memory.
@@ -154,18 +154,14 @@ public final class PKSImageCacheManager {
         clearDiskCache()
     }
 
-    /// Removes a specific image from the cache.
+    /// Removes a specific image from the memory cache.
     ///
     /// - Parameter url: The URL of the image to remove.
+    /// - Note: Selective removal from disk cache is not supported due to limitations in the public API.
     public func removeImage(for url: URL) {
         let request = ImageRequest(url: url)
         pipeline.cache.removeCachedImage(for: request)
-
-        if let dataCache = pipeline.configuration.dataCache as? DataCache {
-            // DataCache doesn't provide a way to remove a specific key via public API
-            // We would need to clear all or wait for expiration
-            dataCache.removeAll()
-        }
+        // Disk cache does not support selective removal via public API.
     }
 
     /// Cache statistics providing insight into cache usage.
@@ -179,6 +175,8 @@ public final class PKSImageCacheManager {
             memoryCacheCostLimit: imageCache?.costLimit ?? 0,
             memoryCacheCountLimit: imageCache?.countLimit ?? 0,
             diskCacheSizeLimit: dataCache?.sizeLimit ?? 0,
+            diskCacheTotalSize: dataCache?.totalSize ?? 0,
+            diskCacheTotalCount: dataCache?.totalCount ?? 0,
             isDiskCacheEnabled: dataCache != nil,
             isMemoryCacheEnabled: configuration.memoryCache.isEnabled
         )
@@ -200,6 +198,12 @@ public final class PKSImageCacheManager {
 
         /// Disk cache size limit in bytes.
         public let diskCacheSizeLimit: Int
+
+        /// Current total size of items in disk cache in bytes.
+        public let diskCacheTotalSize: Int
+
+        /// Total number of items in disk cache.
+        public let diskCacheTotalCount: Int
 
         /// Whether disk cache is enabled.
         public let isDiskCacheEnabled: Bool
