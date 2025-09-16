@@ -168,6 +168,7 @@ extension PKSPillSection {
     }
 }
 
+/*
 #Preview {
     PKSPillSection("Test") {
         PKSPill("Test 1") { _ in
@@ -191,3 +192,4 @@ extension PKSPillSection {
     }
     .selectionLimit(.multiple(limit: 2))
 }
+*/

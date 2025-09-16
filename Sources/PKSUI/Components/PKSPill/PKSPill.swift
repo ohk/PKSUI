@@ -73,7 +73,7 @@ public struct PKSPill<L: View, Sh: Shape>: View {
     /// Background color of the pill.
     ///
     /// - Note: Defaults to system gray color.
-    private var backgroundColor: Color = Color(uiColor: UIColor.systemGray)
+    private var backgroundColor: Color = Color.gray
     
     /// Padding around the label content.
     ///
@@ -416,6 +416,7 @@ extension PKSPill where L == Text {
 }
 
 // MARK: - Preview
+/*
 #Preview {
     VStack(spacing: 20) {
         
@@ -485,3 +486,4 @@ extension PKSPill where L == Text {
         }
     }
 }
+*/
